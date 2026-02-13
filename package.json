@@ -1,0 +1,15 @@
+{
+  "name": "random-user-api",
+  "version": "1.0.0",
+  "description": "REST API to generate random user data",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["api", "random", "user", "fake-data"],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
