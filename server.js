@@ -1,7 +1,5 @@
-const http = require('http');
-const crypto = require('crypto');
-
-const PORT = process.env.PORT || 3000;
+// Cloudflare Worker Version of Random User API
+// This works with Cloudflare Workers/Pages Functions
 
 // Data pools for generating random users
 const maleFirstNames = ['James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph', 'Thomas', 'Charles', 'Christopher', 'Daniel', 'Matthew', 'Anthony', 'Mark', 'Donald', 'Steven', 'Paul', 'Andrew', 'Joshua'];
@@ -24,8 +22,12 @@ function generateUUID() {
   return crypto.randomUUID();
 }
 
-function generateHash(algorithm, text) {
-  return crypto.createHash(algorithm).update(text).digest('hex');
+async function generateHash(algorithm, text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest(algorithm, data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function generatePostcode() {
@@ -93,7 +95,7 @@ function generateNINO() {
   return `${prefix} ${numbers} ${suffix}`;
 }
 
-function generateUser(gender) {
+async function generateUser(gender) {
   let finalGender;
   if (gender === 'male' || gender === 'female') {
     finalGender = gender;
@@ -126,6 +128,12 @@ function generateUser(gender) {
   const pictureId = randomInt(1, 99);
   const genderPath = isMale ? 'men' : 'women';
 
+  // Generate hashes
+  const passwordWithSalt = password + salt;
+  const md5 = await generateHash('MD5', passwordWithSalt);
+  const sha1 = await generateHash('SHA-1', passwordWithSalt);
+  const sha256 = await generateHash('SHA-256', passwordWithSalt);
+
   return {
     gender: finalGender,
     name: {
@@ -157,9 +165,9 @@ function generateUser(gender) {
       username: username,
       password: password,
       salt: salt,
-      md5: generateHash('md5', password + salt),
-      sha1: generateHash('sha1', password + salt),
-      sha256: generateHash('sha256', password + salt)
+      md5: md5,
+      sha1: sha1,
+      sha256: sha256
     },
     dob: {
       date: dobDate,
@@ -184,61 +192,65 @@ function generateUser(gender) {
   };
 }
 
-const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json');
+// Cloudflare Worker Handler
+export default {
+  async fetch(request, env, ctx) {
+    // CORS headers
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Content-Type': 'application/json'
+    };
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
-
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = url.pathname;
-  const gender = url.searchParams.get('gender') || 'random';
-
-  if (pathname === '/api/user' && req.method === 'GET') {
-    if (gender !== 'male' && gender !== 'female' && gender !== 'random') {
-      res.writeHead(400);
-      res.end(JSON.stringify({
-        error: 'Invalid gender parameter. Must be "male", "female", or "random"'
-      }));
-      return;
+    // Handle OPTIONS request
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
     }
 
-    const user = generateUser(gender);
-    res.writeHead(200);
-    res.end(JSON.stringify(user, null, 2));
-  }
-  else if (pathname === '/' && req.method === 'GET') {
-    res.writeHead(200);
-    res.end(JSON.stringify({
-      message: 'Random User API',
-      endpoints: {
-        '/api/user': 'Generate a random user',
-        '/api/user?gender=male': 'Generate a random male user',
-        '/api/user?gender=female': 'Generate a random female user',
-        '/api/user?gender=random': 'Generate a random user (default)'
-      }
-    }, null, 2));
-  }
-  else {
-    res.writeHead(404);
-    res.end(JSON.stringify({
-      error: 'Endpoint not found'
-    }));
-  }
-});
+    // Parse URL
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    const gender = url.searchParams.get('gender') || 'random';
 
-server.listen(PORT, () => {
-  console.log(`\n🚀 Random User API is running on http://localhost:${PORT}`);
-  console.log('\n📚 Available endpoints:');
-  console.log(`   GET http://localhost:${PORT}/api/user`);
-  console.log(`   GET http://localhost:${PORT}/api/user?gender=male`);
-  console.log(`   GET http://localhost:${PORT}/api/user?gender=female`);
-  console.log(`   GET http://localhost:${PORT}/api/user?gender=random`);
-  console.log('\n💡 Press Ctrl+C to stop the server\n');
-});
+    // Handle /api/user endpoint
+    if (pathname === '/api/user' && request.method === 'GET') {
+      if (gender !== 'male' && gender !== 'female' && gender !== 'random') {
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid gender parameter. Must be "male", "female", or "random"'
+          }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      const user = await generateUser(gender);
+      return new Response(
+        JSON.stringify(user, null, 2),
+        { status: 200, headers: corsHeaders }
+      );
+    }
+    
+    // Handle root endpoint
+    if (pathname === '/' && request.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          message: 'Random User API',
+          endpoints: {
+            '/api/user': 'Generate a random user',
+            '/api/user?gender=male': 'Generate a random male user',
+            '/api/user?gender=female': 'Generate a random female user',
+            '/api/user?gender=random': 'Generate a random user (default)'
+          }
+        }, null, 2),
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    // 404 for other routes
+    return new Response(
+      JSON.stringify({ error: 'Endpoint not found' }),
+      { status: 404, headers: corsHeaders }
+    );
+  }
+};
