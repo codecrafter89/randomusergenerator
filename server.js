@@ -1,15 +1,93 @@
-// Cloudflare Worker Version of Random User API
-// This works with Cloudflare Workers/Pages Functions
+// Cloudflare Worker - Random User API (Extended Version with More Names)
 
-// Data pools for generating random users
-const maleFirstNames = ['James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph', 'Thomas', 'Charles', 'Christopher', 'Daniel', 'Matthew', 'Anthony', 'Mark', 'Donald', 'Steven', 'Paul', 'Andrew', 'Joshua'];
-const femaleFirstNames = ['Mary', 'Patricia', 'Jennifer', 'Linda', 'Barbara', 'Elizabeth', 'Susan', 'Jessica', 'Sarah', 'Karen', 'Nancy', 'Lisa', 'Betty', 'Margaret', 'Sandra', 'Ashley', 'Kimberly', 'Emily', 'Donna', 'Michelle'];
-const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White', 'Harris', 'Clark', 'Lewis', 'Robinson', 'Walker', 'Young', 'Allen'];
-const streets = ['Main Street', 'High Street', 'Park Avenue', 'Oak Lane', 'Maple Drive', 'Church Road', 'Station Road', 'Mill Lane', 'Victoria Road', 'Green Lane', 'Queens Road', 'Kings Road', 'The Avenue', 'Bridge Street', 'London Road', 'York Road', 'New Street', 'West Street', 'Richmond Road', 'Manor Road'];
-const cities = ['London', 'Manchester', 'Birmingham', 'Leeds', 'Liverpool', 'Newcastle', 'Sheffield', 'Bristol', 'Edinburgh', 'Glasgow', 'Cardiff', 'Belfast', 'Southampton', 'Leicester', 'Nottingham', 'Coventry', 'Bradford', 'Stoke', 'Wolverhampton', 'Plymouth'];
-const states = ['England', 'Scotland', 'Wales', 'Northern Ireland', 'Greater London', 'West Midlands', 'Greater Manchester', 'West Yorkshire', 'Merseyside', 'South Yorkshire'];
+const maleFirstNames = [
+  'James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph', 'Thomas', 'Charles',
+  'Christopher', 'Daniel', 'Matthew', 'Anthony', 'Mark', 'Donald', 'Steven', 'Paul', 'Andrew', 'Joshua',
+  'Kenneth', 'Kevin', 'Brian', 'George', 'Edward', 'Ronald', 'Timothy', 'Jason', 'Jeffrey', 'Ryan',
+  'Jacob', 'Gary', 'Nicholas', 'Eric', 'Jonathan', 'Stephen', 'Larry', 'Justin', 'Scott', 'Brandon',
+  'Benjamin', 'Samuel', 'Raymond', 'Gregory', 'Alexander', 'Patrick', 'Frank', 'Dennis', 'Jerry', 'Tyler',
+  'Aaron', 'Jose', 'Adam', 'Henry', 'Nathan', 'Douglas', 'Zachary', 'Peter', 'Kyle', 'Walter',
+  'Ethan', 'Jeremy', 'Harold', 'Keith', 'Christian', 'Roger', 'Noah', 'Gerald', 'Carl', 'Terry',
+  'Sean', 'Austin', 'Arthur', 'Lawrence', 'Jesse', 'Dylan', 'Bryan', 'Joe', 'Jordan', 'Billy',
+  'Bruce', 'Albert', 'Willie', 'Gabriel', 'Logan', 'Alan', 'Juan', 'Wayne', 'Roy', 'Ralph',
+  'Randy', 'Eugene', 'Vincent', 'Russell', 'Elijah', 'Louis', 'Bobby', 'Philip', 'Johnny', 'Bradley'
+];
 
-// Utility functions
+const femaleFirstNames = [
+  'Mary', 'Patricia', 'Jennifer', 'Linda', 'Barbara', 'Elizabeth', 'Susan', 'Jessica', 'Sarah', 'Karen',
+  'Nancy', 'Lisa', 'Betty', 'Margaret', 'Sandra', 'Ashley', 'Kimberly', 'Emily', 'Donna', 'Michelle',
+  'Dorothy', 'Carol', 'Amanda', 'Melissa', 'Deborah', 'Stephanie', 'Rebecca', 'Sharon', 'Laura', 'Cynthia',
+  'Kathleen', 'Amy', 'Angela', 'Shirley', 'Anna', 'Brenda', 'Pamela', 'Emma', 'Nicole', 'Helen',
+  'Samantha', 'Katherine', 'Christine', 'Debra', 'Rachel', 'Carolyn', 'Janet', 'Catherine', 'Maria', 'Heather',
+  'Diane', 'Ruth', 'Julie', 'Olivia', 'Joyce', 'Virginia', 'Victoria', 'Kelly', 'Lauren', 'Christina',
+  'Joan', 'Evelyn', 'Judith', 'Megan', 'Andrea', 'Cheryl', 'Hannah', 'Jacqueline', 'Martha', 'Gloria',
+  'Teresa', 'Ann', 'Sara', 'Madison', 'Frances', 'Kathryn', 'Janice', 'Jean', 'Abigail', 'Alice',
+  'Brittany', 'Denise', 'Beverly', 'Danielle', 'Amber', 'Theresa', 'Marilyn', 'Diana', 'Natalie', 'Sophia',
+  'Rose', 'Isabella', 'Alexis', 'Kayla', 'Charlotte', 'Grace', 'Doris', 'Judy', 'Julia', 'Marie'
+];
+
+const lastNames = [
+  'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+  'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin',
+  'Lee', 'Thompson', 'White', 'Harris', 'Clark', 'Lewis', 'Robinson', 'Walker', 'Young', 'Allen',
+  'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores', 'Green', 'Adams', 'Nelson',
+  'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell', 'Carter', 'Roberts', 'Gomez', 'Phillips', 'Evans',
+  'Turner', 'Diaz', 'Parker', 'Cruz', 'Edwards', 'Collins', 'Reyes', 'Stewart', 'Morris', 'Morales',
+  'Murphy', 'Cook', 'Rogers', 'Gutierrez', 'Ortiz', 'Morgan', 'Cooper', 'Peterson', 'Bailey', 'Reed',
+  'Kelly', 'Howard', 'Ramos', 'Kim', 'Cox', 'Ward', 'Richardson', 'Watson', 'Brooks', 'Chavez',
+  'Wood', 'James', 'Bennett', 'Gray', 'Mendoza', 'Ruiz', 'Hughes', 'Price', 'Alvarez', 'Castillo',
+  'Sanders', 'Patel', 'Myers', 'Long', 'Ross', 'Foster', 'Jimenez', 'Powell', 'Jenkins', 'Perry',
+  'Russell', 'Sullivan', 'Bell', 'Coleman', 'Butler', 'Henderson', 'Barnes', 'Gonzales', 'Fisher', 'Vasquez',
+  'Simmons', 'Romero', 'Jordan', 'Patterson', 'Alexander', 'Hamilton', 'Graham', 'Reynolds', 'Griffin', 'Wallace',
+  'Moreno', 'West', 'Cole', 'Hayes', 'Bryant', 'Herrera', 'Gibson', 'Ellis', 'Tran', 'Medina',
+  'Aguilar', 'Stevens', 'Murray', 'Ford', 'Castro', 'Marshall', 'Owens', 'Harrison', 'Fernandez', 'McDonald',
+  'Woods', 'Washington', 'Kennedy', 'Wells', 'Vargas', 'Henry', 'Chen', 'Freeman', 'Webb', 'Tucker'
+];
+
+const streets = [
+  'Main Street', 'High Street', 'Park Avenue', 'Oak Lane', 'Maple Drive', 'Church Road', 'Station Road', 'Mill Lane',
+  'Victoria Road', 'Green Lane', 'Queens Road', 'Kings Road', 'The Avenue', 'Bridge Street', 'London Road', 'York Road',
+  'New Street', 'West Street', 'Richmond Road', 'Manor Road', 'North Street', 'South Street', 'East Street', 'Market Street',
+  'Chapel Street', 'Albert Street', 'George Street', 'Duke Street', 'Princess Street', 'Church Street', 'Castle Street',
+  'Victoria Street', 'Park Road', 'School Lane', 'Mill Road', 'Grove Road', 'Windsor Road', 'Alexandra Road', 'Springfield Road',
+  'Hillside Road', 'Woodland Avenue', 'Cedar Avenue', 'Elm Street', 'Willow Lane', 'Beech Road', 'Pine Grove', 'Sycamore Drive',
+  'Chestnut Close', 'Orchard Way', 'Fairfield Road', 'Riverside Drive', 'Meadow Lane', 'Station Approach', 'Railway Terrace',
+  'Oxford Road', 'Cambridge Street', 'Edinburgh Way', 'Bristol Avenue', 'Manchester Road', 'Liverpool Street', 'Birmingham Road',
+  'Newcastle Drive', 'Leeds Road', 'Sheffield Lane', 'Regent Street', 'Piccadilly', 'Strand', 'Fleet Street', 'Whitehall',
+  'Park Crescent', 'The Crescent', 'The Gardens', 'The Green', 'The Grove', 'The Drive', 'The Rise', 'The Mount',
+  'Grosvenor Road', 'Pembroke Road', 'Buckingham Street', 'Wellington Road', 'Nelson Street', 'Trafalgar Road', 'Coronation Street',
+  'Jubilee Road', 'Commonwealth Avenue', 'Imperial Drive', 'Kingsway', 'Queensway', 'Broadway', 'The Broadway', 'Bath Road'
+];
+
+const cities = [
+  'London', 'Manchester', 'Birmingham', 'Leeds', 'Liverpool', 'Newcastle', 'Sheffield', 'Bristol',
+  'Edinburgh', 'Glasgow', 'Cardiff', 'Belfast', 'Southampton', 'Leicester', 'Nottingham', 'Coventry',
+  'Bradford', 'Stoke', 'Wolverhampton', 'Plymouth', 'Aberdeen', 'Derby', 'Portsmouth', 'Brighton',
+  'Reading', 'Northampton', 'Luton', 'Bolton', 'Preston', 'Sunderland', 'Norwich', 'Swansea',
+  'Milton Keynes', 'Dundee', 'Swindon', 'Oxford', 'Cambridge', 'York', 'Bath', 'Canterbury',
+  'Chester', 'Durham', 'Exeter', 'Gloucester', 'Lancaster', 'Lincoln', 'Salisbury', 'Winchester',
+  'Worcester', 'Carlisle', 'Inverness', 'Stirling', 'Perth', 'Peterborough', 'Ipswich', 'Colchester',
+  'Blackpool', 'Bournemouth', 'Chelmsford', 'Cheltenham', 'Doncaster', 'Grimsby', 'Hastings', 'Huddersfield',
+  'Hull', 'Maidstone', 'Middlesbrough', 'Oldham', 'Poole', 'Rochdale', 'Rotherham', 'Salford',
+  'Slough', 'Southend', 'Stockport', 'Telford', 'Wakefield', 'Warrington', 'Watford', 'Wigan',
+  'Worthing', 'Basildon', 'Blackburn', 'Burnley', 'Darlington', 'Gateshead', 'Hartlepool', 'Harrow',
+  'Hemel Hempstead', 'High Wycombe', 'Kidderminster', 'Barnsley', 'Scunthorpe', 'St Albans', 'Stevenage'
+];
+
+const states = [
+  'England', 'Scotland', 'Wales', 'Northern Ireland', 'Greater London', 'West Midlands', 'Greater Manchester',
+  'West Yorkshire', 'Merseyside', 'South Yorkshire', 'Tyne and Wear', 'East Midlands', 'East of England',
+  'South East England', 'South West England', 'North West England', 'North East England', 'Yorkshire and the Humber',
+  'Kent', 'Essex', 'Hampshire', 'Surrey', 'Hertfordshire', 'Lancashire', 'Cheshire', 'Berkshire',
+  'Buckinghamshire', 'Oxfordshire', 'Cambridgeshire', 'Norfolk', 'Suffolk', 'Somerset', 'Devon', 'Cornwall',
+  'Dorset', 'Wiltshire', 'Gloucestershire', 'Worcestershire', 'Warwickshire', 'Staffordshire', 'Shropshire',
+  'Herefordshire', 'Derbyshire', 'Nottinghamshire', 'Leicestershire', 'Northamptonshire', 'Lincolnshire',
+  'County Durham', 'Northumberland', 'Cumbria', 'North Yorkshire', 'East Riding of Yorkshire',
+  'Lothian', 'Strathclyde', 'Grampian', 'Highland', 'Tayside', 'Fife', 'Borders', 'Dumfries and Galloway',
+  'Clwyd', 'Dyfed', 'Gwent', 'Gwynedd', 'Mid Glamorgan', 'Powys', 'South Glamorgan', 'West Glamorgan',
+  'Antrim', 'Armagh', 'Down', 'Fermanagh', 'Londonderry', 'Tyrone'
+];
+
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -45,7 +123,7 @@ function generateMobileNumber() {
   return `07${randomInt(100, 999)} ${randomInt(100000, 999999)}`;
 }
 
-function generateUsername(firstName, lastName) {
+function generateUsername() {
   const adjectives = ['happy', 'lazy', 'smart', 'brave', 'quick', 'silent', 'blue', 'red', 'green', 'golden'];
   const animals = ['tiger', 'lion', 'bear', 'wolf', 'eagle', 'falcon', 'shark', 'fox', 'panda', 'leopard'];
   return randomChoice(adjectives) + randomChoice(animals) + randomInt(100, 999);
@@ -108,7 +186,7 @@ async function generateUser(gender) {
   const firstName = isMale ? randomChoice(maleFirstNames) : randomChoice(femaleFirstNames);
   const lastName = randomChoice(lastNames);
   const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`;
-  const username = generateUsername(firstName, lastName);
+  const username = generateUsername();
   const password = generatePassword();
   const salt = generateSalt();
   const uuid = generateUUID();
@@ -128,7 +206,6 @@ async function generateUser(gender) {
   const pictureId = randomInt(1, 99);
   const genderPath = isMale ? 'men' : 'women';
 
-  // Generate hashes
   const passwordWithSalt = password + salt;
   const md5 = await generateHash('MD5', passwordWithSalt);
   const sha1 = await generateHash('SHA-1', passwordWithSalt);
@@ -136,20 +213,12 @@ async function generateUser(gender) {
 
   return {
     gender: finalGender,
-    name: {
-      title: title,
-      first: firstName,
-      last: lastName
-    },
+    name: { title, first: firstName, last: lastName },
     location: {
-      street: {
-        number: streetNumber,
-        name: streetName
-      },
-      city: city,
-      state: state,
+      street: { number: streetNumber, name: streetName },
+      city, state,
       country: 'United Kingdom',
-      postcode: postcode,
+      postcode,
       coordinates: {
         latitude: (Math.random() * 180 - 90).toFixed(4),
         longitude: (Math.random() * 360 - 180).toFixed(4)
@@ -159,30 +228,12 @@ async function generateUser(gender) {
         description: randomChoice(['GMT', 'Central European Time', 'Eastern European Time', 'Indian Standard Time'])
       }
     },
-    email: email,
-    login: {
-      uuid: uuid,
-      username: username,
-      password: password,
-      salt: salt,
-      md5: md5,
-      sha1: sha1,
-      sha256: sha256
-    },
-    dob: {
-      date: dobDate,
-      age: dobAge
-    },
-    registered: {
-      date: registeredDate,
-      age: registeredAge
-    },
-    phone: phone,
-    cell: cell,
-    id: {
-      name: 'NINO',
-      value: nino
-    },
+    email,
+    login: { uuid, username, password, salt, md5, sha1, sha256 },
+    dob: { date: dobDate, age: dobAge },
+    registered: { date: registeredDate, age: registeredAge },
+    phone, cell,
+    id: { name: 'NINO', value: nino },
     picture: {
       large: `https://randomuser.me/api/portraits/${genderPath}/${pictureId}.jpg`,
       medium: `https://randomuser.me/api/portraits/med/${genderPath}/${pictureId}.jpg`,
@@ -192,10 +243,8 @@ async function generateUser(gender) {
   };
 }
 
-// Cloudflare Worker Handler
 export default {
-  async fetch(request, env, ctx) {
-    // CORS headers
+  async fetch(request) {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -203,39 +252,39 @@ export default {
       'Content-Type': 'application/json'
     };
 
-    // Handle OPTIONS request
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Parse URL
     const url = new URL(request.url);
     const pathname = url.pathname;
     const gender = url.searchParams.get('gender') || 'random';
 
-    // Handle /api/user endpoint
     if (pathname === '/api/user' && request.method === 'GET') {
       if (gender !== 'male' && gender !== 'female' && gender !== 'random') {
         return new Response(
-          JSON.stringify({
-            error: 'Invalid gender parameter. Must be "male", "female", or "random"'
-          }),
+          JSON.stringify({ error: 'Invalid gender parameter. Must be "male", "female", or "random"' }),
           { status: 400, headers: corsHeaders }
         );
       }
 
       const user = await generateUser(gender);
-      return new Response(
-        JSON.stringify(user, null, 2),
-        { status: 200, headers: corsHeaders }
-      );
+      return new Response(JSON.stringify(user, null, 2), { status: 200, headers: corsHeaders });
     }
     
-    // Handle root endpoint
     if (pathname === '/' && request.method === 'GET') {
       return new Response(
         JSON.stringify({
-          message: 'Random User API',
+          message: 'Random User API - Extended Version',
+          version: '2.0',
+          dataSize: {
+            maleNames: maleFirstNames.length,
+            femaleNames: femaleFirstNames.length,
+            lastNames: lastNames.length,
+            streets: streets.length,
+            cities: cities.length,
+            states: states.length
+          },
           endpoints: {
             '/api/user': 'Generate a random user',
             '/api/user?gender=male': 'Generate a random male user',
@@ -247,7 +296,6 @@ export default {
       );
     }
 
-    // 404 for other routes
     return new Response(
       JSON.stringify({ error: 'Endpoint not found' }),
       { status: 404, headers: corsHeaders }
